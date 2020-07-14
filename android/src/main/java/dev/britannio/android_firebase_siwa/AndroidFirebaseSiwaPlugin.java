@@ -2,22 +2,20 @@ package dev.britannio.android_firebase_siwa;
 
 
 import android.app.Activity;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.auth.AuthCredential;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.OAuthProvider;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
@@ -39,6 +37,8 @@ public class AndroidFirebaseSiwaPlugin implements FlutterPlugin, ActivityAware, 
     private MethodChannel channel;
 
     private Activity activity;
+
+    private static final String TAG = "AndroidFirebaseSiwa";
 
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
@@ -62,60 +62,63 @@ public class AndroidFirebaseSiwaPlugin implements FlutterPlugin, ActivityAware, 
 
     @Override
     public void onMethodCall(@NonNull MethodCall call, @NonNull final Result result) {
-        if (call.method.equals("getPlatformVersion")) {
-            result.success("Android " + android.os.Build.VERSION.RELEASE);
-        } else if (call.method.equals("signInWithApple")) {
+        if (call.method.equals("signInWithApple")) {
+            // Copied from https://firebase.google.com/docs/auth/android/apple#handle_the_sign-in_flow_with_the_firebase_sdk
             OAuthProvider.Builder provider = OAuthProvider.newBuilder("apple.com");
-            provider.setScopes(new ArrayList<String>());
+            List<String> scopes =
+                    new ArrayList<String>() {
+                        {
+                            add("email");
+                            add("name");
+                        }
+                    };
+            provider.setScopes(scopes);
 
-            FirebaseAuth auth = FirebaseAuth.getInstance();
+            FirebaseAuth mAuth = FirebaseAuth.getInstance();
 
-            auth.signOut();
-
-            auth.startActivityForSignInWithProvider(activity, provider.build())
-                    .addOnSuccessListener(
-                            new OnSuccessListener<AuthResult>() {
-                                @Override
-                                public void onSuccess(AuthResult authResult) {
-                                    AuthCredential appleCredential = authResult.getCredential();
-                                    try {
-                                        Map credential = reflectAppleCredential(appleCredential);
-
-                                        result.success(credential);
-                                    } catch (Exception e) {
-                                        e.printStackTrace();
-                                        result.error("Credential reflection failed", e.getMessage(), null);
+            Task<AuthResult> pending = mAuth.getPendingAuthResult();
+            if (pending != null) {
+                pending.addOnSuccessListener(new OnSuccessListener<AuthResult>() {
+                    @Override
+                    public void onSuccess(AuthResult authResult) {
+                        Log.d(TAG, "checkPending:onSuccess:" + authResult.getUser());
+                        // Get the user profile with authResult.getUser() and
+                        // authResult.getAdditionalUserInfo(), and the ID
+                        // token from Apple with authResult.getCredential().
+                        result.success(null);
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.w(TAG, "checkPending:onFailure", e);
+                        result.error(e.getClass().getSimpleName(), e.getMessage(), null);
+                    }
+                });
+            } else {
+                Log.d(TAG, "pending: null");
+                mAuth.startActivityForSignInWithProvider(activity, provider.build())
+                        .addOnSuccessListener(
+                                new OnSuccessListener<AuthResult>() {
+                                    @Override
+                                    public void onSuccess(AuthResult authResult) {
+                                        // Sign-in successful!
+                                        Log.d(TAG, "activitySignIn:onSuccess:" + authResult.getUser());
+                                        FirebaseUser user = authResult.getUser();
+                                        result.success(null);
                                     }
-                                }
-                            })
-                    .addOnFailureListener(
-                            new OnFailureListener() {
-                                @Override
-                                public void onFailure(@NonNull Exception e) {
-                                    result.error(e.getClass().getSimpleName(), e.getMessage(), null);
-                                }
-                            });
+                                })
+                        .addOnFailureListener(
+                                new OnFailureListener() {
+                                    @Override
+                                    public void onFailure(@NonNull Exception e) {
+                                        Log.w(TAG, "activitySignIn:onFailure", e);
+                                        result.error(e.getClass().getSimpleName(), e.getMessage(), null);
+                                    }
+                                });
+            }
         } else {
             result.notImplemented();
         }
-    }
-
-    private Map reflectAppleCredential(AuthCredential authCredential) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-
-        Method getIdToken = authCredential.getClass().getDeclaredMethod("getIdToken");
-        Method getAccessToken = authCredential.getClass().getDeclaredMethod("getAccessToken");
-
-        getIdToken.setAccessible(true);
-        getAccessToken.setAccessible(true);
-
-        String idToken = (String) getIdToken.invoke(authCredential);
-        String accessToken = (String) getAccessToken.invoke(authCredential);
-
-        Map credential = new HashMap();
-        credential.put("idToken", idToken);
-        credential.put("accessToken", accessToken);
-
-        return credential;
     }
 
     @Override
@@ -126,7 +129,6 @@ public class AndroidFirebaseSiwaPlugin implements FlutterPlugin, ActivityAware, 
     @Override
     public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
         activity = binding.getActivity();
-
     }
 
     @Override
@@ -136,7 +138,6 @@ public class AndroidFirebaseSiwaPlugin implements FlutterPlugin, ActivityAware, 
 
     @Override
     public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
-
         activity = binding.getActivity();
     }
 
