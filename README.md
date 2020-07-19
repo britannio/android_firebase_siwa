@@ -1,14 +1,16 @@
 # android_firebase_siwa
 
-A new flutter plugin project.
+Provides Sign In With Apple functionality to Android apps using [firebase_auth](https://pub.dev/packages/firebase_auth)
 
-## Getting Started
+# Usage
 
-This project is a starting point for a Flutter
-[plug-in package](https://flutter.dev/developing-packages/),
-a specialized package that includes platform-specific implementation code for
-Android and/or iOS.
+```dart
+final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
+final AndroidFirebaseSiwa androidFirebaseSiwa = AndroidFirebaseSiwa.instance;
 
-For help getting started with Flutter, view our 
-[online documentation](https://flutter.dev/docs), which offers tutorials, 
-samples, guidance on mobile development, and a full API reference.
+await androidFirebaseSiwa.signInWithApple();
+
+final FirebaseUser user = firebaseAuth.currentUser();
+```
+
+Scopes are currently set to "name" and "email", more info [here](https://developer.apple.com/documentation/sign_in_with_apple/clientconfigi/3230955-scope)
