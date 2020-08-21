@@ -63,61 +63,65 @@ public class AndroidFirebaseSiwaPlugin implements FlutterPlugin, ActivityAware, 
     @Override
     public void onMethodCall(@NonNull MethodCall call, @NonNull final Result result) {
         if (call.method.equals("signInWithApple")) {
-            // Copied from https://firebase.google.com/docs/auth/android/apple#handle_the_sign-in_flow_with_the_firebase_sdk
-            OAuthProvider.Builder provider = OAuthProvider.newBuilder("apple.com");
-            List<String> scopes =
-                    new ArrayList<String>() {
-                        {
-                            add("email");
-                            add("name");
-                        }
-                    };
-            provider.setScopes(scopes);
-
-            FirebaseAuth mAuth = FirebaseAuth.getInstance();
-
-            Task<AuthResult> pending = mAuth.getPendingAuthResult();
-            if (pending != null) {
-                pending.addOnSuccessListener(new OnSuccessListener<AuthResult>() {
-                    @Override
-                    public void onSuccess(AuthResult authResult) {
-                        Log.d(TAG, "checkPending:onSuccess:" + authResult.getUser());
-                        // Get the user profile with authResult.getUser() and
-                        // authResult.getAdditionalUserInfo(), and the ID
-                        // token from Apple with authResult.getCredential().
-                        result.success(null);
-                    }
-                }).addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.w(TAG, "checkPending:onFailure", e);
-                        result.error(e.getClass().getSimpleName(), e.getMessage(), null);
-                    }
-                });
-            } else {
-                Log.d(TAG, "pending: null");
-                mAuth.startActivityForSignInWithProvider(activity, provider.build())
-                        .addOnSuccessListener(
-                                new OnSuccessListener<AuthResult>() {
-                                    @Override
-                                    public void onSuccess(AuthResult authResult) {
-                                        // Sign-in successful!
-                                        Log.d(TAG, "activitySignIn:onSuccess:" + authResult.getUser());
-                                        FirebaseUser user = authResult.getUser();
-                                        result.success(null);
-                                    }
-                                })
-                        .addOnFailureListener(
-                                new OnFailureListener() {
-                                    @Override
-                                    public void onFailure(@NonNull Exception e) {
-                                        Log.w(TAG, "activitySignIn:onFailure", e);
-                                        result.error(e.getClass().getSimpleName(), e.getMessage(), null);
-                                    }
-                                });
-            }
+            signInWithApple(result);
         } else {
             result.notImplemented();
+        }
+    }
+
+    private void signInWithApple(@NonNull final Result result) {
+        // Copied from https://firebase.google.com/docs/auth/android/apple#handle_the_sign-in_flow_with_the_firebase_sdk
+        OAuthProvider.Builder provider = OAuthProvider.newBuilder("apple.com");
+        List<String> scopes =
+                new ArrayList<String>() {
+                    {
+                        add("email");
+                        add("name");
+                    }
+                };
+        provider.setScopes(scopes);
+
+        FirebaseAuth mAuth = FirebaseAuth.getInstance();
+
+        Task<AuthResult> pending = mAuth.getPendingAuthResult();
+        if (pending != null) {
+            pending.addOnSuccessListener(new OnSuccessListener<AuthResult>() {
+                @Override
+                public void onSuccess(AuthResult authResult) {
+                    Log.d(TAG, "checkPending:onSuccess:" + authResult.getUser());
+                    // Get the user profile with authResult.getUser() and
+                    // authResult.getAdditionalUserInfo(), and the ID
+                    // token from Apple with authResult.getCredential().
+                    result.success(null);
+                }
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+                    Log.w(TAG, "checkPending:onFailure", e);
+                    result.error(e.getClass().getSimpleName(), e.getMessage(), null);
+                }
+            });
+        } else {
+            Log.d(TAG, "pending: null");
+            mAuth.startActivityForSignInWithProvider(activity, provider.build())
+                    .addOnSuccessListener(
+                            new OnSuccessListener<AuthResult>() {
+                                @Override
+                                public void onSuccess(AuthResult authResult) {
+                                    // Sign-in successful!
+                                    Log.d(TAG, "activitySignIn:onSuccess:" + authResult.getUser());
+                                    FirebaseUser user = authResult.getUser();
+                                    result.success(null);
+                                }
+                            })
+                    .addOnFailureListener(
+                            new OnFailureListener() {
+                                @Override
+                                public void onFailure(@NonNull Exception e) {
+                                    Log.w(TAG, "activitySignIn:onFailure", e);
+                                    result.error(e.getClass().getSimpleName(), e.getMessage(), null);
+                                }
+                            });
         }
     }
 
