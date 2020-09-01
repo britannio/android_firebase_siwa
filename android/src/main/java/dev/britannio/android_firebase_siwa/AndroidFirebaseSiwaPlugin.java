@@ -42,7 +42,7 @@ public class AndroidFirebaseSiwaPlugin implements FlutterPlugin, ActivityAware, 
 
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
-        channel = new MethodChannel(flutterPluginBinding.getFlutterEngine().getDartExecutor(), "android_firebase_siwa");
+        channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "android_firebase_siwa");
         channel.setMethodCallHandler(this);
     }
 
