@@ -1,16 +1,16 @@
 name: android_firebase_siwa
 description: A new flutter plugin project.
-version: 0.0.1
+version: 0.1.0
 
 environment:
-  sdk: ">=2.7.0 <3.0.0"
+  sdk: '>=2.12.0 <3.0.0'
   flutter: ">=1.10.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  firebase_core: ^0.7.0
-  firebase_auth: ^0.20.0+1
+  firebase_core: ^1.0.0
+  firebase_auth: ^1.0.0
 
 dev_dependencies:
   flutter_test:
